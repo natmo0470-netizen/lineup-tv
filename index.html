@@ -11,31 +11,42 @@
     --blue:#3b82f6; --green:#22c55e; --redchip:#ef4444;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  html,body{height:100%;background:var(--bg);color:var(--ink);font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden}
+  html,body{height:100%;background:radial-gradient(ellipse at 35% 45%,#16233f 0%,#0b1324 60%,#060b16 100%);color:var(--ink);font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden}
   /* TV-safe area: ~3% padding for overscan */
   #app{position:absolute;inset:3vh 3vw;display:flex;gap:2.5vw;align-items:center;justify-content:center}
   .hidden{display:none!important}
 
   /* ---------- Board ---------- */
-  #board{height:92vh;width:92vh;max-width:62vw;max-height:62vw;display:grid;grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(10,1fr);gap:.45vh;padding:.9vh;background:#0f5132;border-radius:1.4vh;box-shadow:0 1vh 4vh rgba(0,0,0,.5)}
-  .cell{position:relative;background:var(--card);color:var(--cardInk);border-radius:.6vh;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;font-weight:700;transition:transform .12s}
-  .cell .rk{font-size:2.6vh}
-  .cell .st{font-size:2.4vh;margin-top:.2vh}
-  .cell.red{color:var(--red)}
-  .cell.corner{background:#2c3a5c;color:#ffd34d;font-size:1.5vh;letter-spacing:.1vh}
-  .cell.legal{box-shadow:inset 0 0 0 .45vh #34d399;background:#e8fff4}
-  .cell.dim{opacity:.38}
-  .cell.cursor{outline:.6vh solid var(--focus);outline-offset:.15vh;z-index:3;transform:scale(1.12)}
-  .cell.last::after{content:"";position:absolute;inset:-.2vh;border:.35vh dashed #fff;border-radius:.7vh;pointer-events:none}
-  .chip{position:absolute;width:72%;height:72%;border-radius:50%;box-shadow:inset 0 -.5vh 0 rgba(0,0,0,.28),0 .3vh .6vh rgba(0,0,0,.4);border:.35vh solid rgba(255,255,255,.75)}
-  .chip.locked{border:.45vh solid #ffd34d;box-shadow:0 0 1.2vh #ffd34d,inset 0 -.5vh 0 rgba(0,0,0,.28)}
-  .chip.locked::after{content:"★";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:2.2vh}
+  #board{height:92vh;width:92vh;max-width:62vw;max-height:62vw;display:grid;grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(10,1fr);gap:.55vh;padding:1.3vh;
+    background:radial-gradient(circle at 50% 42%,#227a52 0%,#145a3b 55%,#0b3826 100%);
+    border:1.1vh solid #6b4423;border-radius:2vh;
+    box-shadow:0 0 0 .35vh #2b1a0c,inset 0 0 3vh rgba(0,0,0,.45),0 2vh 5vh rgba(0,0,0,.6)}
+  .cell{position:relative;background:linear-gradient(170deg,#fffdf7 0%,#f3ebd8 100%);color:#1f2433;border-radius:.8vh;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;font-weight:800;
+    box-shadow:0 .25vh .45vh rgba(0,0,0,.35),inset 0 0 0 .15vh rgba(0,0,0,.06);transition:transform .14s,filter .14s,box-shadow .14s}
+  .cell .rk{font-size:2.7vh;letter-spacing:-.1vh}
+  .cell .st{font-size:2.5vh;margin-top:.3vh}
+  .cell.red{color:#c62835}
+  .cell.corner{background:radial-gradient(circle at 40% 35%,#ffe9a3,#e0b04a 60%,#b9842a);color:#5c3b06;box-shadow:0 .25vh .45vh rgba(0,0,0,.35),inset 0 0 0 .25vh rgba(255,255,255,.35)}
+  .cell.corner .star{font-size:3.4vh}
+  .cell.corner .free{font-size:1.2vh;letter-spacing:.25vh;margin-top:.2vh;font-weight:900}
+  .cell.legal{box-shadow:0 0 0 .4vh #34d399,0 0 1.6vh rgba(52,211,153,.75);transform:translateY(-.2vh);z-index:2}
+  .cell.dim{filter:saturate(.35) brightness(.58)}
+  .cell.cursor{box-shadow:0 0 0 .55vh var(--focus),0 0 2.6vh rgba(255,211,77,.9);z-index:4;transform:scale(1.16)}
+  .cell.last::after{content:"";position:absolute;inset:-.35vh;border:.35vh solid rgba(255,255,255,.9);border-radius:1vh;pointer-events:none;animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.25}50%{opacity:1}}
+  .chip{position:absolute;width:74%;height:74%;border-radius:50%;
+    box-shadow:0 .45vh .7vh rgba(0,0,0,.5),inset 0 -.45vh .6vh rgba(0,0,0,.3),inset 0 .35vh .5vh rgba(255,255,255,.35);
+    animation:drop .22s ease-out}
+  .chip::before{content:"";position:absolute;inset:17%;border-radius:50%;border:.3vh dashed rgba(255,255,255,.65)}
+  .chip.locked{box-shadow:0 0 0 .4vh #ffd34d,0 0 1.6vh rgba(255,211,77,.85),inset 0 -.45vh .6vh rgba(0,0,0,.3)}
+  .chip.locked::after{content:"★";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff7d6;font-size:2.2vh;text-shadow:0 .2vh .3vh rgba(0,0,0,.5)}
+  @keyframes drop{from{transform:scale(1.5);opacity:0}to{transform:scale(1);opacity:1}}
 
   /* ---------- Side panel ---------- */
   #side{width:30vw;height:92vh;display:flex;flex-direction:column;gap:2vh}
   .title{font-size:4.6vh;font-weight:800;letter-spacing:.2vh}
   .title span{color:var(--focus)}
-  .box{background:var(--panel);border-radius:1.4vh;padding:2vh}
+  .box{background:linear-gradient(180deg,rgba(30,46,82,.92),rgba(18,29,54,.92));border:.15vh solid rgba(255,255,255,.06);border-radius:1.4vh;padding:2vh}
   #scores{display:flex;flex-direction:column;gap:1.2vh}
   .pl{display:flex;align-items:center;gap:1.4vh;font-size:2.6vh;padding:.9vh 1.2vh;border-radius:1vh}
   .pl.active{background:var(--panel2);box-shadow:inset .5vh 0 0 var(--focus)}
@@ -44,9 +55,9 @@
   .pl .seq{font-weight:800}
   #status{font-size:2.6vh;min-height:7vh;line-height:1.35}
   #hand{display:flex;flex-wrap:wrap;gap:1.2vh;justify-content:center}
-  .hc{width:7.6vh;height:11vh;background:var(--card);color:var(--cardInk);border-radius:1vh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;position:relative;transition:transform .12s}
+  .hc{width:7.6vh;height:11vh;background:linear-gradient(170deg,#fffdf7,#efe6d1);box-shadow:0 .5vh 1vh rgba(0,0,0,.45);color:var(--cardInk);border-radius:1vh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;position:relative;transition:transform .12s}
   .hc .rk{font-size:3.8vh}.hc .st{font-size:3.4vh}
-  .hc.red{color:var(--red)}
+  .hc.red{color:#c62835}
   .hc .tag{position:absolute;bottom:.6vh;font-size:1.2vh;letter-spacing:.1vh;text-transform:uppercase;background:#1b2233;color:#fff;padding:.2vh .6vh;border-radius:.5vh}
   .hc.dead{opacity:.55}
   .hc.focus{outline:.6vh solid var(--focus);outline-offset:.3vh;transform:translateY(-1.2vh) scale(1.08)}
@@ -94,7 +105,7 @@
 // ---------------- Constants ----------------
 const SUITS = {S:'♠', C:'♣', D:'♦', H:'♥'};
 const RANKS = ['A','2','3','4','5','6','7','8','9','10','Q','K'];
-const COLORS = [{name:'Blue',hex:'#3b82f6'},{name:'Green',hex:'#22c55e'},{name:'Red',hex:'#ef4444'}];
+const COLORS = [{name:'Blue',hex:'#3b82f6',lt:'#93c5fd',dk:'#1d4ed8'},{name:'Green',hex:'#22c55e',lt:'#86efac',dk:'#15803d'},{name:'Red',hex:'#ef4444',lt:'#fca5a5',dk:'#b91c1c'}];
 const DIRS = [[0,1],[1,0],[1,1],[1,-1]];
 const N = 10;
 
@@ -108,26 +119,19 @@ const isCorner = (r,c) => (r===0||r===N-1) && (c===0||c===N-1);
 
 function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 
-// Board layout: spiral from the outside in; two copies of every non-jack card (96 spaces + 4 free corners)
-function spiral(n){
-  const out=[]; let t=0,b=n-1,l=0,r=n-1;
-  while(t<=b && l<=r){
-    for(let c=l;c<=r;c++) out.push([t,c]); t++;
-    for(let x=t;x<=b;x++) out.push([x,r]); r--;
-    if(t<=b){ for(let c=r;c>=l;c--) out.push([b,c]); b--; }
-    if(l<=r){ for(let x=b;x>=t;x--) out.push([x,l]); l++; }
-  }
-  return out;
-}
-const LAYOUT = (() => {
-  const grid = Array.from({length:N},()=>Array(N).fill(null));
-  const order = [];
-  for (const r of RANKS) for (const s of 'SCDH') order.push(r+s);
-  const cards = order.concat(order.slice().reverse());
-  const spots = spiral(N).filter(([r,c]) => !isCorner(r,c));
-  spots.forEach(([r,c],i) => grid[r][c] = cards[i]);
-  return grid;
-})();
+// Classic tournament board arrangement ('XX' = free corner)
+const LAYOUT = [
+  'XX 2S 3S 4S 5S 6S 7S 8S 9S XX',
+  '6C 5C 4C 3C 2C AH KH QH 10H 10S',
+  '7C AS 2D 3D 4D 5D 6D 7D 9H QS',
+  '8C KS 6C 5C 4C 3C 2C 8D 8H KS',
+  '9C QS 7C 6H 5H 4H AH 9D 7H AS',
+  '10C 10S 8C 7H 2H 3H KH 10D 6H 2D',
+  'QC 9S 9C 8H 9H 10H QH QD 5H 3D',
+  'KC 8S 10C QC KC AC AD KD 4H 4D',
+  'AC 7S 6S 5S 4S 3S 2S 2H 3H 5D',
+  'XX AD KD QD 10D 9D 8D 7D 6D XX'
+].map(row => row.split(' ').map(c => c==='XX' ? null : c));
 
 function makeDeck(){
   const d=[];
@@ -201,9 +205,9 @@ function startTurn(){
   if(S.over) return;
   S.deadUsed=false; S.sel=null; S.mode='hand'; S.handIdx=0;
   const p=S.players[S.turn];
+  S.busy=!p.human;
   render();
-  if(!p.human){ S.busy=true; setStatus(`<b style="color:${p.hex}">${p.name}</b> (CPU) is thinking…`); setTimeout(cpuMove, 1000); return; }
-  S.busy=false;
+  if(!p.human){ setStatus(`<b style="color:${p.hex}">${p.name}</b> (CPU) is thinking…`); setTimeout(cpuMove, 1000); return; }
   if(!anyPlayable(S.turn) && !hasDeadSwap(S.turn)){ toast(`${p.name} has no playable cards — turn passes`); return endTurn(); }
   if(humans()>1) showPass();
   else setStatus(`Your turn, <b style="color:${p.hex}">${p.name}</b>. Pick a card.`);
@@ -294,8 +298,8 @@ function render(){
     if(legal){ legal.has(r+','+c) ? cls.push('legal') : cls.push('dim'); }
     if(human && S.mode==='board' && S.cur[0]===r && S.cur[1]===c) cls.push('cursor');
     if(S.last && S.last[0]===r && S.last[1]===c) cls.push('last');
-    const face = x.corner ? 'FREE' : `<span class="rk">${rankOf(x.card)}</span><span class="st">${SUITS[suitOf(x.card)]}</span>`;
-    const chip = x.chip!==null ? `<div class="chip${x.locked?' locked':''}" style="background:${S.players[x.chip].hex}"></div>` : '';
+    const face = x.corner ? '<span class="star">★</span><span class="free">FREE</span>' : `<span class="rk">${rankOf(x.card)}</span><span class="st">${SUITS[suitOf(x.card)]}</span>`;
+    const chip = x.chip!==null ? `<div class="chip${x.locked?' locked':''}" style="background:radial-gradient(circle at 35% 30%,${S.players[x.chip].lt},${S.players[x.chip].hex} 50%,${S.players[x.chip].dk})"></div>` : '';
     h+=`<div class="${cls.join(' ')}" data-r="${r}" data-c="${c}">${face}${chip}</div>`;
   }
   $('board').innerHTML=h;
