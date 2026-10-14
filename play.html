@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0b1324">
+<title>Lineup — Your Hand</title>
+<style>
+  :root{--bg:#0b1324;--panel:#16233f;--panel2:#1f3157;--ink:#eef2fb;--muted:#93a3c4;--focus:#ffd34d;--ok:#34d399;--team:#3b82f6}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{min-height:100%;background:radial-gradient(ellipse at 50% 0%,#16233f,#0b1324 60%,#060b16);color:var(--ink);font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  body{padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));min-height:100vh;user-select:none;-webkit-user-select:none}
+  .hidden{display:none!important}
+  .title{font-size:30px;font-weight:900;letter-spacing:1px;text-align:center}.title span{color:var(--focus)}
+  .card{background:linear-gradient(180deg,rgba(30,46,82,.95),rgba(18,29,54,.95));border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:16px}
+  label{display:block;font-size:14px;color:var(--muted);margin:14px 0 6px}
+  input{width:100%;font-size:20px;padding:12px 14px;border-radius:12px;border:2px solid #2c4170;background:#0e1830;color:var(--ink);outline:none}
+  input:focus{border-color:var(--focus)}
+  button{font:inherit;font-size:18px;font-weight:800;border:0;border-radius:14px;padding:14px 18px;width:100%;background:var(--focus);color:#1b1400;cursor:pointer}
+  button.secondary{background:var(--panel2);color:var(--ink)}
+  button:disabled{opacity:.4}
+  .muted{color:var(--muted);font-size:14px;line-height:1.5}
+  .center{text-align:center}
+  .stack>*+*{margin-top:12px}
+  #conn{position:fixed;top:0;left:0;right:0;background:#7c2d12;color:#fff;text-align:center;font-size:14px;padding:6px;z-index:50}
+
+  /* lobby */
+  .teams{display:flex;flex-direction:column;gap:10px}
+  .teamBtn{display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;background:var(--panel2);border:3px solid transparent;text-align:left;color:var(--ink);width:100%}
+  .teamBtn.mine{border-color:currentColor}
+  .teamBtn .dot{width:26px;height:26px;border-radius:50%;flex:none;border:2px solid rgba(255,255,255,.7)}
+  .teamBtn .nm{font-weight:800;font-size:18px}
+  .teamBtn .pl{font-size:14px;color:var(--muted);font-weight:500}
+  .teamBtn .cnt{margin-left:auto;font-size:14px;color:var(--muted);font-weight:600}
+
+  /* game */
+  #top{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+  .pill{display:flex;align-items:center;gap:6px;background:var(--panel);border-radius:999px;padding:6px 10px;font-size:14px;font-weight:700}
+  .pill .d{width:14px;height:14px;border-radius:50%}
+  .pill.me{outline:2px solid currentColor}
+  #banner{border-radius:14px;padding:12px 14px;font-size:17px;font-weight:700;text-align:center;margin-bottom:10px;background:var(--panel)}
+  #banner.turn{background:var(--team);color:#fff;animation:glow 1.4s ease-in-out infinite}
+  @keyframes glow{50%{filter:brightness(1.18)}}
+  #board{width:min(100%,62vh);margin:0 auto;aspect-ratio:1/1;display:grid;grid-template-columns:repeat(10,1fr);gap:2px;padding:5px;border-radius:10px;
+    background:radial-gradient(circle at 50% 42%,#227a52,#145a3b 55%,#0b3826);border:4px solid #6b4423}
+  .cell{position:relative;background:linear-gradient(170deg,#fffdf7,#f1e8d3);color:#1f2433;border-radius:3px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;font-weight:800;font-size:min(3.2vw,2vh)}
+  .cell .s{font-size:.95em}
+  .cell.red{color:#c62835}
+  .cell.corner{background:radial-gradient(circle at 40% 35%,#ffe9a3,#e0b04a 60%,#b9842a);color:#5c3b06;font-size:min(4vw,2.6vh)}
+  .cell.dim{filter:saturate(.3) brightness(.55)}
+  .cell.legal{box-shadow:0 0 0 2px var(--ok),0 0 8px rgba(52,211,153,.8);z-index:2}
+  .cell.pend{box-shadow:0 0 0 3px var(--focus),0 0 12px rgba(255,211,77,.9);z-index:3;transform:scale(1.18)}
+  .cell.last::after{content:"";position:absolute;inset:-2px;border:2px solid #fff;border-radius:4px;animation:pulse 1.6s infinite}
+  @keyframes pulse{50%{opacity:.25}}
+  .chip{position:absolute;width:76%;height:76%;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.5),inset 0 -2px 3px rgba(0,0,0,.3)}
+  .chip.locked{box-shadow:0 0 0 2px var(--focus),0 0 6px rgba(255,211,77,.8)}
+  .chip.locked::after{content:"★";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:min(2.6vw,1.6vh)}
+  #handWrap{margin-top:12px}
+  #hand{display:flex;gap:6px;justify-content:center;flex-wrap:nowrap}
+  .hc{flex:0 1 13.5vw;max-width:64px;aspect-ratio:5/7;background:linear-gradient(170deg,#fffdf7,#efe6d1);color:#1f2433;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:900;position:relative;box-shadow:0 3px 8px rgba(0,0,0,.45);transition:transform .12s}
+  .hc .r{font-size:min(6vw,30px)}.hc .s{font-size:min(5.5vw,26px)}
+  .hc.red{color:#c62835}
+  .hc .tag{position:absolute;bottom:4px;font-size:9px;letter-spacing:.5px;text-transform:uppercase;background:#1b2233;color:#fff;padding:1px 4px;border-radius:4px}
+  .hc.dead{opacity:.55}
+  .hc.sel{transform:translateY(-10px);box-shadow:0 0 0 3px var(--focus),0 6px 14px rgba(0,0,0,.5)}
+  #action{margin-top:14px;min-height:54px}
+  #hintTxt{text-align:center;color:var(--muted);font-size:15px;padding:14px 0}
+
+  #over{position:fixed;inset:0;background:rgba(5,10,22,.9);display:flex;align-items:center;justify-content:center;padding:24px;z-index:40}
+  #over h1{font-size:38px;margin-bottom:6px}
+  #toast{position:fixed;left:50%;bottom:max(18px,env(safe-area-inset-bottom));transform:translateX(-50%);background:#22355f;border:2px solid var(--focus);padding:10px 16px;border-radius:12px;font-size:15px;z-index:60;max-width:90vw;text-align:center;transition:opacity .3s}
+</style>
+</head>
+<body>
+<div id="conn" class="hidden"></div>
+
+<!-- Join -->
+<div id="joinV" class="stack" style="max-width:420px;margin:6vh auto 0">
+  <div class="title">LINE<span>UP</span></div>
+  <p class="muted center">Your cards stay on your phone. The board is on the TV.</p>
+  <div class="card">
+    <label for="nameIn">Your name</label>
+    <input id="nameIn" maxlength="14" autocomplete="nickname" placeholder="e.g. Sam">
+    <div id="roomRow"><label for="roomIn">Room code (on the TV)</label>
+    <input id="roomIn" maxlength="4" autocapitalize="characters" placeholder="ABCD" style="text-transform:uppercase;letter-spacing:6px"></div>
+    <div style="margin-top:16px"><button id="joinBtn">Join game</button></div>
+  </div>
+</div>
+
+<!-- Lobby -->
+<div id="lobbyV" class="hidden stack" style="max-width:460px;margin:3vh auto 0">
+  <div class="title">LINE<span>UP</span></div>
+  <p class="muted center" id="lobbyHello"></p>
+  <div class="card stack">
+    <div style="font-weight:800">Pick your team</div>
+    <div class="teams" id="teams"></div>
+    <p class="muted">Up to 2 players per team. Empty teams are played by the CPU.</p>
+  </div>
+  <button id="startBtn">Everyone's in — start game</button>
+  <p class="muted center" id="lobbyNote"></p>
+</div>
+
+<!-- Game -->
+<div id="gameV" class="hidden" style="max-width:520px;margin:0 auto">
+  <div id="top"></div>
+  <div id="banner"></div>
+  <div id="board"></div>
+  <div id="handWrap"><div id="hand"></div></div>
+  <div id="action"></div>
+</div>
+
+<div id="over" class="hidden"><div class="card stack center" style="width:100%;max-width:380px">
+  <h1 id="overTitle"></h1><p class="muted" id="overSub"></p>
+  <button id="againBtn">Play again</button>
+  <button id="lobbyBtn" class="secondary">Back to lobby</button>
+</div></div>
+<div id="toast" class="hidden"></div>
+
+<script src="common.js"></script>
+<script>
+(() => {
+'use strict';
+const { N, SUITS, LAYOUT, rankOf, suitOf, isRed, isTwoEyed, isOneEyed, cardLabel } = LINEUP;
+const $ = id => document.getElementById(id);
+const P = new URLSearchParams(location.search);
+const store = { get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }, set(k,v){ try { localStorage.setItem(k,v); } catch(e){} } };
+
+let room = (P.get('room') || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
+let myId = P.get('pid') || store.get('lineupId'); if (!myId) { myId = 'p' + Math.random().toString(36).slice(2, 12); store.set('lineupId', myId); }
+let myName = store.get('lineupName') || '';
+let client = null, L = null, S = null, sel = null, pend = null, lastNews = 0, wasMyTurn = false, retryT = null, wakeLock = null;
+
+$('nameIn').value = myName;
+$('roomIn').value = room;
+if (room) $('roomRow').classList.add('hidden');
+
+$('joinBtn').onclick = () => {
+  myName = $('nameIn').value.trim().slice(0, 14);
+  if (!myName) { $('nameIn').focus(); return toast('Enter your name'); }
+  room = $('roomIn').value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
+  if (room.length !== 4) { $('roomRow').classList.remove('hidden'); return toast('Enter the 4-letter room code from the TV'); }
+  store.set('lineupName', myName);
+  try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(w => wakeLock = w).catch(() => {}); } catch (e) {}
+  $('joinBtn').disabled = true; $('joinBtn').textContent = 'Connecting…';
+  connect();
+};
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && client) { try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(w => wakeLock = w).catch(() => {}); } catch (e) {} }
+});
+
+function connect(){
+  if (client) client.destroy();
+  clearTimeout(retryT);
+  client = Net.join(room, {
+    open(){ setConn(''); client.send({ t:'hello', id: myId, name: myName }); },
+    data: onMsg,
+    close(){ if ($('conn').classList.contains('hidden')) setConn('Connection lost — reconnecting…'); retryT = setTimeout(connect, 2500); },
+    error(e){
+      if (e && e.type === 'peer-unavailable') setConn(`Room ${room} not found — is Lineup open on the TV?`);
+      else setConn('Connection problem — retrying…');
+      $('joinBtn').disabled = false; $('joinBtn').textContent = 'Join game';
+    }
+  });
+}
+function setConn(t){ $('conn').textContent = t; $('conn').classList.toggle('hidden', !t); }
+function send(m){ if (client) client.send(m); }
+function show(v){ ['joinV','lobbyV','gameV'].forEach(id => $(id).classList.toggle('hidden', id !== v)); }
+
+function onMsg(m){
+  if (!m || !m.t) return;
+  if (m.t === 'msg') return toast(m.text);
+  if (m.t === 'lobby') { L = m; S = null; sel = pend = null; $('over').classList.add('hidden'); renderLobby(); return; }
+  if (m.t === 'state') {
+    const prevHand = S ? S.hand.map(h => h.card).join() : '';
+    S = m;
+    if (S.hand.map(h => h.card).join() !== prevHand) { sel = null; pend = null; }
+    if (!S.myTurn) pend = null;
+    if (S.myTurn && !wasMyTurn) { try { navigator.vibrate && navigator.vibrate([120, 60, 120]); } catch (e) {} if (sel !== null) send({ t:'select', i: sel }); }
+    wasMyTurn = S.myTurn;
+    if (S.news && S.news.id !== lastNews) { if (lastNews) toast(S.news.text); lastNews = S.news.id; }
+    renderGame();
+  }
+}
+
+// ---------- Lobby ----------
+function renderLobby(){
+  show('lobbyV');
+  $('lobbyHello').innerHTML = `Hi <b style="color:var(--ink)">${esc(L.me.name)}</b>! You're in the room.`;
+  $('teams').innerHTML = L.teams.map((t, i) => {
+    const mine = L.me.team === i;
+    const others = t.players.length;
+    return `<button class="teamBtn${mine ? ' mine' : ''}" data-t="${i}" style="color:${t.hex}">
+      <span class="dot" style="background:${t.hex}"></span>
+      <span><span class="nm" style="color:${t.hex}">${t.name}</span><br><span class="pl">${others ? t.players.map(esc).join(', ') : 'CPU (nobody yet)'}</span></span>
+      <span class="cnt">${mine ? '✓ You' : others + '/2'}</span></button>`;
+  }).join('');
+  $('startBtn').classList.toggle('hidden', L.inGame);
+  $('lobbyNote').textContent = L.inGame ? 'A game is in progress on the TV — you’ll be in the next one.' : 'Anyone can start once everybody has joined.';
+}
+$('teams').addEventListener('click', e => { const b = e.target.closest('.teamBtn'); if (b) send({ t:'team', team: +b.dataset.t }); });
+$('startBtn').onclick = () => send({ t:'start' });
+
+// ---------- Game ----------
+function renderGame(){
+  show('gameV');
+  const me = S.teams[S.me.team];
+  document.documentElement.style.setProperty('--team', me.hex);
+  $('top').innerHTML = S.teams.map((t, i) =>
+    `<div class="pill${i === S.me.team ? ' me' : ''}" style="color:${t.hex}"><span class="d" style="background:${t.hex}"></span><span style="color:var(--ink)">${t.seqs}/${S.target}</span></div>`).join('') +
+    `<div class="muted" style="margin-left:auto;font-size:13px">You're <b style="color:${me.hex}">${esc(S.me.name)}</b></div>`;
+  const tt = S.teams[S.turn.team];
+  $('banner').className = S.myTurn ? 'turn' : '';
+  $('banner').innerHTML = S.winner !== null ? `${S.teams[S.winner].name} wins!`
+    : S.myTurn ? 'Your turn! Pick a card, then a space.'
+    : `Waiting for <span style="color:${tt.hex}">${esc(S.turn.name)}</span>…`;
+
+  const card = sel !== null ? S.hand[sel] : null;
+  const legal = card ? new Set(card.legal.map(([r, c]) => r * N + c)) : null;
+  let h = '';
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++){
+    const k = r * N + c, cc = LAYOUT[r][c], v = S.board[k];
+    const cls = ['cell'];
+    if (!cc) cls.push('corner'); else if (isRed(cc)) cls.push('red');
+    if (legal) cls.push(legal.has(k) ? 'legal' : 'dim');
+    if (pend && pend[0] === r && pend[1] === c) cls.push('pend');
+    if (S.last && S.last[0] === r && S.last[1] === c) cls.push('last');
+    const face = cc ? `<span>${rankOf(cc)}</span><span class="s">${SUITS[suitOf(cc)]}</span>` : '★';
+    let chip = '';
+    if (v >= 0) { const t = S.teams[v % 10]; chip = `<div class="chip${v >= 10 ? ' locked' : ''}" style="background:radial-gradient(circle at 35% 30%,${t.lt},${t.hex} 50%,${t.dk})"></div>`; }
+    h += `<div class="${cls.join(' ')}" data-r="${r}" data-c="${c}">${face}${chip}</div>`;
+  }
+  $('board').innerHTML = h;
+
+  $('hand').innerHTML = S.hand.map((x, i) => {
+    const cls = ['hc']; if (isRed(x.card)) cls.push('red'); if (sel === i) cls.push('sel');
+    let tag = '';
+    if (isTwoEyed(x.card)) tag = '<span class="tag">Wild</span>';
+    else if (isOneEyed(x.card)) tag = '<span class="tag">Remove</span>';
+    else if (x.dead) { tag = '<span class="tag">Dead</span>'; cls.push('dead'); }
+    return `<div class="${cls.join(' ')}" data-i="${i}"><span class="r">${rankOf(x.card)}</span><span class="s">${SUITS[suitOf(x.card)]}</span>${tag}</div>`;
+  }).join('');
+
+  let a = '';
+  if (S.winner !== null) a = '';
+  else if (!S.myTurn) a = `<div id="hintTxt">${sel !== null ? 'Showing where this card goes.' : 'Tap a card to see where it goes.'}</div>`;
+  else if (card && card.dead) a = S.deadUsed ? `<div id="hintTxt">You already swapped a dead card this turn.</div>` : `<button id="swapBtn">Swap this dead card</button>`;
+  else if (pend) {
+    const lab = LAYOUT[pend[0]][pend[1]];
+    a = `<button id="placeBtn">${isOneEyed(card.card) ? 'Remove this chip' : 'Place chip on ' + (lab ? cardLabel(lab) : 'this space')}</button>`;
+  }
+  else if (card) a = `<div id="hintTxt">${card.legal.length ? (isOneEyed(card.card) ? 'Tap an opponent’s chip to remove.' : 'Tap a glowing space.') : 'No spaces for this card.'}</div>`;
+  else a = `<div id="hintTxt">Pick a card from your hand.</div>`;
+  $('action').innerHTML = a;
+  if ($('placeBtn')) $('placeBtn').onclick = () => { send({ t:'play', i: sel, r: pend[0], c: pend[1] }); sel = pend = null; $('action').innerHTML = '<div id="hintTxt">Placing…</div>'; };
+  if ($('swapBtn')) $('swapBtn').onclick = () => { send({ t:'swap', i: sel }); sel = pend = null; };
+
+  if (S.winner !== null) {
+    const w = S.teams[S.winner];
+    $('overTitle').textContent = w.name + ' wins!'; $('overTitle').style.color = w.hex;
+    $('overSub').textContent = S.winner === S.me.team ? 'Nice work, team!' : w.players.join(' & ');
+    $('over').classList.remove('hidden');
+  } else $('over').classList.add('hidden');
+}
+$('hand').addEventListener('click', e => {
+  const el = e.target.closest('.hc'); if (!el || !S) return;
+  const i = +el.dataset.i;
+  sel = sel === i ? null : i; pend = null;
+  if (S.myTurn) send({ t:'select', i: sel });
+  renderGame();
+});
+$('board').addEventListener('click', e => {
+  const el = e.target.closest('.cell'); if (!el || !S || !S.myTurn || sel === null) return;
+  const r = +el.dataset.r, c = +el.dataset.c;
+  if (!S.hand[sel].legal.some(([a, b]) => a === r && b === c)) return;
+  pend = (pend && pend[0] === r && pend[1] === c) ? null : [r, c];
+  renderGame();
+});
+$('againBtn').onclick = () => send({ t:'start' });
+$('lobbyBtn').onclick = () => send({ t:'lobby' });
+
+function esc(s){ return String(s).replace(/[&<>"]/g, ch => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[ch])); }
+let toastT;
+function toast(msg){ const t = $('toast'); t.textContent = msg; t.classList.remove('hidden'); t.style.opacity = 1; clearTimeout(toastT); toastT = setTimeout(() => { t.style.opacity = 0; setTimeout(() => t.classList.add('hidden'), 300); }, 2400); }
+
+// Returning player with a saved name and a room in the link: rejoin automatically
+if (room && myName && P.get('auto') !== '0') $('joinBtn').click();
+})();
+</script>
+</body>
+</html>

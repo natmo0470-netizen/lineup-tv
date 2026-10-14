@@ -1,28 +1,28 @@
 # Lineup — Cards & Chips (TV edition)
 
-A five-in-a-row card-and-chip board game built for the TV. Plays entirely with a TV remote's D-pad (arrows + OK + Back), and also works with a keyboard, mouse, or touch.
+A five-in-a-row card-and-chip party game. The board lives on the TV; every player's hand lives privately on their own phone.
 
-**Play:** https://natmo0470-netizen.github.io/lineup-tv/
+**Play:** open https://natmo0470-netizen.github.io/lineup-tv/ in the TV's browser, then everyone scans the QR code.
 
-## Features
-- 2 or 3 players, any mix of humans and CPU opponents
-- Remote-first controls with big, high-contrast focus states and a TV-safe margin
-- Pass-the-remote screen that hides hands when more than one human is playing
-- Wild and remove jacks, dead-card swaps, locked lineups, and free corners
+## How it works
+- The TV opens a room and shows a QR code + 4-letter room code.
+- Each player scans it, types a name, and picks a team on their phone.
+- **2 teams** (up to 4 players) or **3 teams** (up to 6 players), with 1–2 players per team. A team with nobody on it is played by the CPU.
+- On your turn your phone buzzes: tap a card, tap a glowing space, tap **Place**. The TV highlights where you're looking so the room can follow along.
+- Dropped connection? Re-scan the code (or just reopen the link) and your hand comes back.
+- No phones? Choose **Play with TV remote only** for the original pass-the-remote mode.
 
-## Controls
-| Remote | Action |
-| --- | --- |
-| ◀ ▶ | Choose a card |
-| OK | Select card / place chip |
-| ◀ ▲ ▼ ▶ (on board) | Move between spaces |
-| Back | Change card / open menu |
+Phones connect straight to the TV's browser with WebRTC via [PeerJS](https://peerjs.com/) — no server to run. Everyone being on the same Wi-Fi works best.
 
 ## Rules
-Play a card from your hand and put a chip on a matching board space (every card appears twice). Five of your chips in a row — across, down, or diagonally — makes a Lineup. Corners count for everyone.
+Play a card and put a chip on a matching space (every card appears twice). Five in a row — across, down, or diagonal — is a Lineup. Corners count for everyone.
 - ♦ ♣ jacks are wild: place on any open space.
 - ♥ ♠ jacks remove an opponent's chip (not one in a finished Lineup).
 - A card whose spaces are both taken is dead — swap it once per turn.
-- 2 players need 2 Lineups; 3 players need 1.
+- 2 teams need 2 Lineups; 3 teams need 1. Teams alternate turns; teammates take turns within their team.
 
-Single file (`index.html`), no build step, no dependencies.
+## Files
+- `index.html` — TV screen (host, board, lobby)
+- `play.html` — phone controller (private hand)
+- `common.js` — shared board layout + networking
+- `vendor/qrcode.js` — QR generator (MIT, Kazuhiko Arase)
