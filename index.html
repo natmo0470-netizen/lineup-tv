@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lineup — Cards &amp; Chips</title>
+<style>
+  :root{
+    --bg:#0b1324; --panel:#121d36; --panel2:#1a2848; --ink:#eef2fb; --muted:#93a3c4;
+    --card:#fbf7ec; --cardInk:#1b2233; --red:#c8202f; --focus:#ffd34d;
+    --blue:#3b82f6; --green:#22c55e; --redchip:#ef4444;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--bg);color:var(--ink);font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden}
+  /* TV-safe area: ~3% padding for overscan */
+  #app{position:absolute;inset:3vh 3vw;display:flex;gap:2.5vw;align-items:center;justify-content:center}
+  .hidden{display:none!important}
+
+  /* ---------- Board ---------- */
+  #board{height:92vh;width:92vh;max-width:62vw;max-height:62vw;display:grid;grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(10,1fr);gap:.45vh;padding:.9vh;background:#0f5132;border-radius:1.4vh;box-shadow:0 1vh 4vh rgba(0,0,0,.5)}
+  .cell{position:relative;background:var(--card);color:var(--cardInk);border-radius:.6vh;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;font-weight:700;transition:transform .12s}
+  .cell .rk{font-size:2.6vh}
+  .cell .st{font-size:2.4vh;margin-top:.2vh}
+  .cell.red{color:var(--red)}
+  .cell.corner{background:#2c3a5c;color:#ffd34d;font-size:1.5vh;letter-spacing:.1vh}
+  .cell.legal{box-shadow:inset 0 0 0 .45vh #34d399;background:#e8fff4}
+  .cell.dim{opacity:.38}
+  .cell.cursor{outline:.6vh solid var(--focus);outline-offset:.15vh;z-index:3;transform:scale(1.12)}
+  .cell.last::after{content:"";position:absolute;inset:-.2vh;border:.35vh dashed #fff;border-radius:.7vh;pointer-events:none}
+  .chip{position:absolute;width:72%;height:72%;border-radius:50%;box-shadow:inset 0 -.5vh 0 rgba(0,0,0,.28),0 .3vh .6vh rgba(0,0,0,.4);border:.35vh solid rgba(255,255,255,.75)}
+  .chip.locked{border:.45vh solid #ffd34d;box-shadow:0 0 1.2vh #ffd34d,inset 0 -.5vh 0 rgba(0,0,0,.28)}
+  .chip.locked::after{content:"★";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:2.2vh}
+
+  /* ---------- Side panel ---------- */
+  #side{width:30vw;height:92vh;display:flex;flex-direction:column;gap:2vh}
+  .title{font-size:4.6vh;font-weight:800;letter-spacing:.2vh}
+  .title span{color:var(--focus)}
+  .box{background:var(--panel);border-radius:1.4vh;padding:2vh}
+  #scores{display:flex;flex-direction:column;gap:1.2vh}
+  .pl{display:flex;align-items:center;gap:1.4vh;font-size:2.6vh;padding:.9vh 1.2vh;border-radius:1vh}
+  .pl.active{background:var(--panel2);box-shadow:inset .5vh 0 0 var(--focus)}
+  .dot{width:3vh;height:3vh;border-radius:50%;border:.3vh solid rgba(255,255,255,.7)}
+  .pl .who{flex:1}
+  .pl .seq{font-weight:800}
+  #status{font-size:2.6vh;min-height:7vh;line-height:1.35}
+  #hand{display:flex;flex-wrap:wrap;gap:1.2vh;justify-content:center}
+  .hc{width:7.6vh;height:11vh;background:var(--card);color:var(--cardInk);border-radius:1vh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;position:relative;transition:transform .12s}
+  .hc .rk{font-size:3.8vh}.hc .st{font-size:3.4vh}
+  .hc.red{color:var(--red)}
+  .hc .tag{position:absolute;bottom:.6vh;font-size:1.2vh;letter-spacing:.1vh;text-transform:uppercase;background:#1b2233;color:#fff;padding:.2vh .6vh;border-radius:.5vh}
+  .hc.dead{opacity:.55}
+  .hc.focus{outline:.6vh solid var(--focus);outline-offset:.3vh;transform:translateY(-1.2vh) scale(1.08)}
+  .hc.selected{outline:.6vh solid #34d399;outline-offset:.3vh;transform:translateY(-1.2vh)}
+  .hc.back{background:repeating-linear-gradient(45deg,#24365f 0 1vh,#1c2a4b 1vh 2vh);border:.4vh solid #3a4f80}
+  #hint{font-size:1.9vh;color:var(--muted);line-height:1.6;margin-top:auto}
+  kbd{background:#2a3a62;color:#fff;border-radius:.5vh;padding:.1vh .7vh;font-family:inherit;font-weight:700}
+
+  /* ---------- Overlays / menus ---------- */
+  .overlay{position:fixed;inset:0;background:rgba(5,10,22,.86);display:flex;align-items:center;justify-content:center;z-index:20}
+  .dialog{background:var(--panel);border-radius:2vh;padding:5vh 6vh;min-width:56vh;text-align:center;box-shadow:0 2vh 6vh rgba(0,0,0,.6)}
+  .dialog h1{font-size:7vh;font-weight:900;letter-spacing:.3vh}
+  .dialog h1 span{color:var(--focus)}
+  .dialog h2{font-size:4.4vh;margin-bottom:1vh}
+  .dialog p{font-size:2.4vh;color:var(--muted);margin:1vh 0 3vh}
+  .opt{font-size:3vh;padding:1.4vh 2.4vh;margin:1.1vh 0;border-radius:1.2vh;background:var(--panel2);display:flex;justify-content:space-between;gap:4vh;border:.4vh solid transparent}
+  .opt .val{color:var(--focus);font-weight:800}
+  .opt.btn{justify-content:center;font-weight:800}
+  .opt.focus{border-color:var(--focus);background:#22355f}
+  .rules{text-align:left;font-size:2.3vh;line-height:1.6;color:#d4dcef;max-width:80vh}
+  .rules li{margin-left:3vh}
+  #toast{position:fixed;left:50%;bottom:5vh;transform:translateX(-50%);background:#22355f;border:.3vh solid var(--focus);padding:1.4vh 3vh;border-radius:1.2vh;font-size:2.6vh;z-index:30;transition:opacity .3s}
+  @keyframes shake{0%,100%{transform:scale(1.12) translateX(0)}25%{transform:scale(1.12) translateX(-.6vh)}75%{transform:scale(1.12) translateX(.6vh)}}
+  .shake{animation:shake .25s}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="board"></div>
+  <div id="side">
+    <div class="title">LINE<span>UP</span></div>
+    <div class="box" id="scores"></div>
+    <div class="box" id="status"></div>
+    <div class="box"><div id="hand"></div></div>
+    <div id="hint"></div>
+  </div>
+</div>
+
+<div id="menu" class="overlay"><div class="dialog" id="menuBox"></div></div>
+<div id="toast" class="hidden"></div>
+
+<script>
+(() => {
+'use strict';
+// ---------------- Constants ----------------
+const SUITS = {S:'♠', C:'♣', D:'♦', H:'♥'};
+const RANKS = ['A','2','3','4','5','6','7','8','9','10','Q','K'];
+const COLORS = [{name:'Blue',hex:'#3b82f6'},{name:'Green',hex:'#22c55e'},{name:'Red',hex:'#ef4444'}];
+const DIRS = [[0,1],[1,0],[1,1],[1,-1]];
+const N = 10;
+
+const rankOf = c => c.slice(0,-1);
+const suitOf = c => c.slice(-1);
+const isRed = c => 'DH'.includes(suitOf(c));
+const isJack = c => rankOf(c) === 'J';
+const isTwoEyed = c => isJack(c) && 'DC'.includes(suitOf(c));   // wild: place anywhere
+const isOneEyed = c => isJack(c) && 'HS'.includes(suitOf(c));   // remove a chip
+const isCorner = (r,c) => (r===0||r===N-1) && (c===0||c===N-1);
+
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+// Board layout: spiral from the outside in; two copies of every non-jack card (96 spaces + 4 free corners)
+function spiral(n){
+  const out=[]; let t=0,b=n-1,l=0,r=n-1;
+  while(t<=b && l<=r){
+    for(let c=l;c<=r;c++) out.push([t,c]); t++;
+    for(let x=t;x<=b;x++) out.push([x,r]); r--;
+    if(t<=b){ for(let c=r;c>=l;c--) out.push([b,c]); b--; }
+    if(l<=r){ for(let x=b;x>=t;x--) out.push([x,l]); l++; }
+  }
+  return out;
+}
+const LAYOUT = (() => {
+  const grid = Array.from({length:N},()=>Array(N).fill(null));
+  const order = [];
+  for (const r of RANKS) for (const s of 'SCDH') order.push(r+s);
+  const cards = order.concat(order.slice().reverse());
+  const spots = spiral(N).filter(([r,c]) => !isCorner(r,c));
+  spots.forEach(([r,c],i) => grid[r][c] = cards[i]);
+  return grid;
+})();
+
+function makeDeck(){
+  const d=[];
+  for(let k=0;k<2;k++) for(const s of 'SCDH'){ for(const r of RANKS) d.push(r+s); d.push('J'+s); }
+  return shuffle(d);
+}
+
+// ---------------- State ----------------
+let S = null;
+let cfg = { n:2, slots:['Human','CPU','CPU'] };
+let ui = { screen:'menu', menuIdx:0, menuKind:'main' };
+
+function newGame(){
+  const players = cfg.slots.slice(0,cfg.n).map((h,i)=>({...COLORS[i], human:h==='Human', hand:[], seqs:0}));
+  const board = LAYOUT.map((row,r)=>row.map((card,c)=>({card, chip:null, locked:false, corner:isCorner(r,c)})));
+  S = { players, board, deck:makeDeck(), discard:[], turn:0, target: cfg.n===2?2:1,
+        mode:'hand', handIdx:0, cur:[4,4], sel:null, deadUsed:false, last:null, over:false, busy:false };
+  const size = cfg.n===2 ? 7 : 6;
+  for(let i=0;i<size;i++) players.forEach(p=>p.hand.push(draw()));
+  closeMenu();
+  startTurn();
+}
+
+function draw(){
+  if(!S.deck.length){ S.deck = shuffle(S.discard); S.discard=[]; }
+  return S.deck.pop() || null;
+}
+
+const humans = () => S.players.filter(p=>p.human).length;
+const cell = (r,c) => S.board[r][c];
+
+function legalTargets(card, pi){
+  const out=[];
+  for(let r=0;r<N;r++) for(let c=0;c<N;c++){
+    const x=S.board[r][c];
+    if(x.corner) continue;
+    if(isTwoEyed(card)) { if(x.chip===null) out.push([r,c]); }
+    else if(isOneEyed(card)) { if(x.chip!==null && x.chip!==pi && !x.locked) out.push([r,c]); }
+    else if(x.card===card && x.chip===null) out.push([r,c]);
+  }
+  return out;
+}
+const isDead = (card,pi) => !isJack(card) && legalTargets(card,pi).length===0;
+
+// ---------------- Sequences ----------------
+function owns(r,c,pi){ const x=S.board[r][c]; return x.corner || x.chip===pi; }
+function checkSequences(pi, r, c){
+  let made=0;
+  for(const [dr,dc] of DIRS){
+    let sr=r, sc=c;
+    while(sr-dr>=0 && sr-dr<N && sc-dc>=0 && sc-dc<N && owns(sr-dr,sc-dc,pi)){ sr-=dr; sc-=dc; }
+    const run=[];
+    let x=sr,y=sc;
+    while(x>=0&&x<N&&y>=0&&y<N&&owns(x,y,pi)){ run.push([x,y]); x+=dr; y+=dc; }
+    if(run.length<5) continue;
+    const at = run.findIndex(([a,b])=>a===r&&b===c);
+    for(let s=Math.max(0,at-4); s<=Math.min(at,run.length-5); s++){
+      const win = run.slice(s,s+5);
+      const overlap = win.filter(([a,b])=>{const q=S.board[a][b]; return q.locked && q.chip===pi;}).length;
+      if(overlap<=1){
+        win.forEach(([a,b])=>{ const q=S.board[a][b]; if(!q.corner) q.locked=true; });
+        made++;
+      }
+    }
+  }
+  return made;
+}
+
+// ---------------- Turn flow ----------------
+function startTurn(){
+  if(S.over) return;
+  S.deadUsed=false; S.sel=null; S.mode='hand'; S.handIdx=0;
+  const p=S.players[S.turn];
+  render();
+  if(!p.human){ S.busy=true; setStatus(`<b style="color:${p.hex}">${p.name}</b> (CPU) is thinking…`); setTimeout(cpuMove, 1000); return; }
+  S.busy=false;
+  if(!anyPlayable(S.turn) && !hasDeadSwap(S.turn)){ toast(`${p.name} has no playable cards — turn passes`); return endTurn(); }
+  if(humans()>1) showPass();
+  else setStatus(`Your turn, <b style="color:${p.hex}">${p.name}</b>. Pick a card.`);
+}
+const anyPlayable = pi => S.players[pi].hand.some(c=>legalTargets(c,pi).length>0);
+const hasDeadSwap = pi => !S.deadUsed && S.players[pi].hand.some(c=>isDead(c,pi));
+
+function play(handIdx, r, c){
+  const pi=S.turn, p=S.players[pi];
+  const card=p.hand.splice(handIdx,1)[0];
+  S.discard.push(card);
+  const x=cell(r,c);
+  let msg='';
+  if(isOneEyed(card)){ const victim=S.players[x.chip]; x.chip=null; msg=`${p.name} removed a ${victim.name} chip`; }
+  else {
+    x.chip=pi;
+    const made=checkSequences(pi,r,c);
+    if(made){ p.seqs+=made; msg=`${p.name} completed a LINEUP! (${p.seqs}/${S.target})`; }
+  }
+  S.last=[r,c];
+  const nc=draw(); if(nc) p.hand.push(nc);
+  if(msg) toast(msg);
+  if(p.seqs>=S.target){ S.over=true; render(); return showWin(pi); }
+  endTurn();
+}
+function endTurn(){ S.turn=(S.turn+1)%S.players.length; startTurn(); }
+
+function swapDead(handIdx){
+  const p=S.players[S.turn];
+  S.discard.push(p.hand.splice(handIdx,1)[0]);
+  const nc=draw(); if(nc) p.hand.push(nc);
+  S.deadUsed=true;
+}
+
+// ---------------- CPU ----------------
+const W=[1,4,15,60,1000], B=[0,3,12,50,600];
+function cellValue(r,c,pi){
+  let v=0;
+  for(const [dr,dc] of DIRS){
+    for(let k=0;k<5;k++){
+      const sr=r-dr*k, sc=c-dc*k, er=sr+dr*4, ec=sc+dc*4;
+      if(sr<0||sr>=N||sc<0||sc>=N||er<0||er>=N||ec<0||ec>=N) continue;
+      let mine=0, corner=0, opp=0; const oppSet=new Set();
+      for(let i=0;i<5;i++){
+        const a=sr+dr*i, b=sc+dc*i; if(a===r&&b===c) continue;
+        const q=S.board[a][b];
+        if(q.corner) corner++; else if(q.chip===pi) mine++; else if(q.chip!==null){ opp++; oppSet.add(q.chip); }
+      }
+      if(opp===0) v+=W[Math.min(mine+corner,4)];
+      else if(mine===0 && oppSet.size===1) v+=B[Math.min(opp+corner,4)];
+    }
+  }
+  return v + (4.5-Math.abs(r-4.5) + 4.5-Math.abs(c-4.5))*0.3;
+}
+function removeValue(r,c){
+  const q=cell(r,c), owner=q.chip; q.chip=null;
+  const v=cellValue(r,c,owner); q.chip=owner; return v*0.9;
+}
+function cpuMove(){
+  if(S.over) return;
+  const pi=S.turn, p=S.players[pi];
+  if(!S.deadUsed){ const d=p.hand.findIndex(c=>isDead(c,pi)); if(d>=0) swapDead(d); }
+  let best=null;
+  p.hand.forEach((card,i)=>{
+    for(const [r,c] of legalTargets(card,pi)){
+      let v;
+      if(isOneEyed(card)) v=removeValue(r,c)-45;
+      else { v=cellValue(r,c,pi); if(isTwoEyed(card)) v-=35; }
+      v+=Math.random()*1.5;
+      if(!best||v>best.v) best={v,i,r,c};
+    }
+  });
+  if(!best){ toast(`${p.name} has no move — turn passes`); return endTurn(); }
+  play(best.i,best.r,best.c);
+}
+
+// ---------------- Rendering ----------------
+const $ = id => document.getElementById(id);
+function render(){
+  const pi=S.turn, p=S.players[pi];
+  const human = p.human && !S.busy;
+  const selCard = S.sel!==null ? p.hand[S.sel] : null;
+  const legal = selCard ? new Set(legalTargets(selCard,pi).map(([r,c])=>r+','+c)) : null;
+  let h='';
+  for(let r=0;r<N;r++) for(let c=0;c<N;c++){
+    const x=S.board[r][c], cls=['cell'];
+    if(x.corner) cls.push('corner'); else if(isRed(x.card)) cls.push('red');
+    if(legal){ legal.has(r+','+c) ? cls.push('legal') : cls.push('dim'); }
+    if(human && S.mode==='board' && S.cur[0]===r && S.cur[1]===c) cls.push('cursor');
+    if(S.last && S.last[0]===r && S.last[1]===c) cls.push('last');
+    const face = x.corner ? 'FREE' : `<span class="rk">${rankOf(x.card)}</span><span class="st">${SUITS[suitOf(x.card)]}</span>`;
+    const chip = x.chip!==null ? `<div class="chip${x.locked?' locked':''}" style="background:${S.players[x.chip].hex}"></div>` : '';
+    h+=`<div class="${cls.join(' ')}" data-r="${r}" data-c="${c}">${face}${chip}</div>`;
+  }
+  $('board').innerHTML=h;
+
+  $('scores').innerHTML = S.players.map((q,i)=>`<div class="pl${i===pi?' active':''}"><div class="dot" style="background:${q.hex}"></div><div class="who">${q.name}${q.human?'':' <small style="color:var(--muted)">CPU</small>'}</div><div class="seq">${q.seqs} / ${S.target}</div></div>`).join('');
+
+  // Hand: show current human's hand; hide CPU hands
+  const showHand = p.human && ui.screen!=='pass';
+  const viewer = showHand ? p : (S.players.find(q=>q.human) && humans()===1 ? S.players.find(q=>q.human) : null);
+  if(viewer){
+    $('hand').innerHTML = viewer.hand.map((card,i)=>{
+      const cls=['hc']; if(isRed(card)) cls.push('red');
+      let tag='';
+      if(isTwoEyed(card)) tag='<span class="tag">Wild</span>';
+      else if(isOneEyed(card)) tag='<span class="tag">Remove</span>';
+      else if(isDead(card,S.players.indexOf(viewer))) { tag='<span class="tag">Dead</span>'; cls.push('dead'); }
+      if(viewer===p && human){
+        if(S.sel===i) cls.push('selected');
+        else if(S.mode==='hand' && S.handIdx===i) cls.push('focus');
+      }
+      return `<div class="${cls.join(' ')}" data-i="${i}"><span class="rk">${rankOf(card)}</span><span class="st">${SUITS[suitOf(card)]}</span>${tag}</div>`;
+    }).join('');
+  } else {
+    $('hand').innerHTML = p.hand.map(()=>'<div class="hc back"></div>').join('');
+  }
+
+  $('hint').innerHTML = S.mode==='board'
+    ? '<kbd>◀ ▲ ▼ ▶</kbd> move &nbsp; <kbd>OK</kbd> place &nbsp; <kbd>Back</kbd> change card'
+    : '<kbd>◀ ▶</kbd> choose card &nbsp; <kbd>OK</kbd> select &nbsp; <kbd>Back</kbd> menu';
+}
+function setStatus(html){ $('status').innerHTML=html; }
+let toastT;
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.remove('hidden'); t.style.opacity=1; clearTimeout(toastT); toastT=setTimeout(()=>{t.style.opacity=0; setTimeout(()=>t.classList.add('hidden'),300);},2200); }
+function shakeCursor(){ const el=document.querySelector('.cell.cursor'); if(el){ el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); } }
+
+// ---------------- Menus ----------------
+function menuItems(){
+  if(ui.menuKind==='main'){
+    const items=[{k:'n',label:'Players',val:cfg.n}];
+    for(let i=0;i<cfg.n;i++) items.push({k:'slot'+i,label:`${COLORS[i].name}`,val:cfg.slots[i]});
+    items.push({k:'start',label:'Start game',btn:true},{k:'rules',label:'How to play',btn:true});
+    return items;
+  }
+  if(ui.menuKind==='pause') return [{k:'resume',label:'Resume',btn:true},{k:'rules',label:'How to play',btn:true},{k:'new',label:'New game',btn:true}];
+  if(ui.menuKind==='win') return [{k:'again',label:'Play again',btn:true},{k:'setup',label:'Change players',btn:true}];
+  if(ui.menuKind==='rules') return [{k:'back',label:'Got it',btn:true}];
+  if(ui.menuKind==='pass') return [{k:'ready',label:"I'm ready — show my cards",btn:true}];
+  return [];
+}
+let menuHeader='';
+function openMenu(kind, header){ ui.menuKind=kind; ui.screen=kind==='pass'?'pass':'menu'; ui.menuIdx=0; menuHeader=header||''; $('menu').classList.remove('hidden'); drawMenu(); }
+function closeMenu(){ ui.screen='game'; $('menu').classList.add('hidden'); }
+function drawMenu(){
+  const items=menuItems();
+  let head=menuHeader;
+  if(ui.menuKind==='main') head=`<h1>LINE<span>UP</span></h1><p>Cards &amp; chips, five in a row. Use your remote.</p>`;
+  if(ui.menuKind==='rules') head=`<h2>How to play</h2><ul class="rules">
+    <li>Pick a card from your hand, then place a chip on a matching space on the board (each card appears twice).</li>
+    <li>Get five of your chips in a row — across, down, or diagonal — to make a <b>Lineup</b>. The four corners are free for everyone.</li>
+    <li><b>Wild</b> jacks (♦ ♣) place a chip on any open space. <b>Remove</b> jacks (♥ ♠) take an opponent's chip off the board — but not one in a finished Lineup.</li>
+    <li>A <b>Dead</b> card has both spaces taken: select it to swap it for a new one (once per turn).</li>
+    <li>2 players need <b>2 Lineups</b> to win; 3 players need <b>1</b>. Two Lineups may share one chip.</li></ul><br>`;
+  $('menuBox').innerHTML = head + items.map((it,i)=>
+    `<div class="opt${it.btn?' btn':''}${i===ui.menuIdx?' focus':''}" data-i="${i}">${it.btn?it.label:`<span>${it.label}</span><span class="val">◀ ${it.val} ▶</span>`}</div>`).join('');
+}
+function menuChange(delta){
+  const it=menuItems()[ui.menuIdx];
+  if(it.k==='n'){ cfg.n = cfg.n===2?3:2; }
+  else if(it.k.startsWith('slot')){ const i=+it.k.slice(4); cfg.slots[i]=cfg.slots[i]==='Human'?'CPU':'Human'; }
+  drawMenu();
+}
+function menuActivate(){
+  const it=menuItems()[ui.menuIdx];
+  switch(it.k){
+    case 'n': case 'slot0': case 'slot1': case 'slot2': return menuChange(1);
+    case 'start': case 'again': case 'new': return newGame();
+    case 'setup': return openMenu('main');
+    case 'rules': ui.prevMenu=ui.menuKind; return openMenu('rules');
+    case 'back': return openMenu(ui.prevMenu||'main');
+    case 'resume': closeMenu(); return render();
+    case 'ready': { closeMenu(); const p=S.players[S.turn]; render(); setStatus(`Your turn, <b style="color:${p.hex}">${p.name}</b>. Pick a card.`); return; }
+  }
+}
+function showPass(){ const p=S.players[S.turn]; openMenu('pass', `<h2 style="color:${p.hex}">${p.name}'s turn</h2><p>Pass the remote to ${p.name}. Others, look away from the cards!</p>`); render(); }
+function showWin(pi){ const p=S.players[pi]; openMenu('win', `<h1 style="color:${p.hex}">${p.name} wins!</h1><p>${p.human?'Nicely played.':'The CPU takes this one.'}</p>`); }
+
+// ---------------- Input ----------------
+const KEY = { LEFT:[37,'ArrowLeft'], UP:[38,'ArrowUp'], RIGHT:[39,'ArrowRight'], DOWN:[40,'ArrowDown'],
+              OK:[13,'Enter',' '], BACK:[8,27,10009,461,'Backspace','Escape','BrowserBack','GoBack'] };
+const is = (e,k) => KEY[k].includes(e.keyCode) || KEY[k].includes(e.key);
+
+document.addEventListener('keydown', e=>{
+  const k = ['LEFT','UP','RIGHT','DOWN','OK','BACK'].find(x=>is(e,x));
+  if(!k) return;
+  e.preventDefault();
+  if(ui.screen==='menu' || ui.screen==='pass') return onMenuKey(k);
+  if(!S || S.over || S.busy || !S.players[S.turn].human) return;
+  if(S.mode==='hand') onHandKey(k); else onBoardKey(k);
+});
+
+function onMenuKey(k){
+  const n=menuItems().length;
+  if(k==='UP') ui.menuIdx=(ui.menuIdx-1+n)%n;
+  else if(k==='DOWN') ui.menuIdx=(ui.menuIdx+1)%n;
+  else if(k==='LEFT'||k==='RIGHT') return menuChange(k==='RIGHT'?1:-1);
+  else if(k==='OK') return menuActivate();
+  else if(k==='BACK'){
+    if(ui.menuKind==='pause') { closeMenu(); return render(); }
+    if(ui.menuKind==='rules') return openMenu(ui.prevMenu||'main');
+  }
+  drawMenu();
+}
+
+function onHandKey(k){
+  const p=S.players[S.turn], n=p.hand.length;
+  if(k==='LEFT') S.handIdx=(S.handIdx-1+n)%n;
+  else if(k==='RIGHT') S.handIdx=(S.handIdx+1)%n;
+  else if(k==='UP'||k==='DOWN'){ const per=4; S.handIdx=Math.max(0,Math.min(n-1,S.handIdx+(k==='DOWN'?per:-per))); }
+  else if(k==='BACK') return openMenu('pause','<h2>Paused</h2>');
+  else if(k==='OK') return selectCard(S.handIdx);
+  render();
+}
+function selectCard(i){
+  const pi=S.turn, card=S.players[pi].hand[i];
+  if(isDead(card,pi)){
+    if(S.deadUsed){ toast('You already swapped a dead card this turn'); return; }
+    swapDead(i); toast('Dead card swapped for a new one'); S.handIdx=Math.min(S.handIdx,S.players[pi].hand.length-1);
+    render();
+    if(!anyPlayable(pi)){ toast('No playable cards — turn passes'); endTurn(); }
+    return;
+  }
+  const targets=legalTargets(card,pi);
+  if(!targets.length){ toast(isOneEyed(card)?'No opponent chips can be removed':'Nowhere to play that card'); return; }
+  S.sel=i; S.mode='board';
+  // jump to the nearest legal space to the current cursor
+  const [cr,cc]=S.cur;
+  targets.sort((a,b)=>(Math.abs(a[0]-cr)+Math.abs(a[1]-cc))-(Math.abs(b[0]-cr)+Math.abs(b[1]-cc)));
+  S.cur=[...targets[0]];
+  setStatus(isOneEyed(card)?'Choose an opponent chip to <b>remove</b>.':isTwoEyed(card)?'Wild! Place your chip on <b>any</b> open space.':'Place your chip on a highlighted space.');
+  render();
+}
+function onBoardKey(k){
+  const [r,c]=S.cur;
+  if(k==='BACK'){ S.mode='hand'; S.sel=null; setStatus('Pick a card.'); return render(); }
+  if(k==='OK'){
+    const pi=S.turn, card=S.players[pi].hand[S.sel];
+    if(legalTargets(card,pi).some(([a,b])=>a===r&&b===c)) return play(S.sel,r,c);
+    return shakeCursor();
+  }
+  // Smart move: jump to the next legal space in that direction if one exists, else step one cell
+  const d={LEFT:[0,-1],RIGHT:[0,1],UP:[-1,0],DOWN:[1,0]}[k];
+  const card=S.players[S.turn].hand[S.sel];
+  const legal=legalTargets(card,S.turn);
+  let best=null, bestD=1e9;
+  for(const [a,b] of legal){
+    const along=(a-r)*d[0]+(b-c)*d[1];
+    if(along<=0) continue;
+    const across=Math.abs((a-r)*d[1])+Math.abs((b-c)*d[0]);
+    const score=along+across*2.5;
+    if(score<bestD){ bestD=score; best=[a,b]; }
+  }
+  if(best && legal.length<=12) S.cur=best;
+  else S.cur=[Math.max(0,Math.min(N-1,r+d[0])), Math.max(0,Math.min(N-1,c+d[1]))];
+  render();
+}
+
+// Mouse / touch support (handy for testing on a computer or phone)
+$('board').addEventListener('click', e=>{
+  const el=e.target.closest('.cell'); if(!el||!S||S.busy||ui.screen!=='game'||S.mode!=='board') return;
+  S.cur=[+el.dataset.r,+el.dataset.c]; onBoardKey('OK'); render();
+});
+$('hand').addEventListener('click', e=>{
+  const el=e.target.closest('.hc'); if(!el||el.dataset.i===undefined||!S||S.busy||ui.screen!=='game') return;
+  S.mode='hand'; S.sel=null; S.handIdx=+el.dataset.i; selectCard(S.handIdx);
+});
+$('menuBox').addEventListener('click', e=>{
+  const el=e.target.closest('.opt'); if(!el) return; ui.menuIdx=+el.dataset.i; menuActivate();
+});
+
+openMenu('main');
+})();
+</script>
+</body>
+</html>
