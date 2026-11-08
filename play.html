@@ -192,7 +192,7 @@ function onMsg(m){
     S = m;
     if (S.hand.map(h => h.card).join() !== prevHand) { sel = null; pend = null; }
     if (!S.myTurn) pend = null;
-    if (S.myTurn && !wasMyTurn) { try { navigator.vibrate && navigator.vibrate([120, 60, 120]); } catch (e) {} if (sel !== null) send({ t:'select', i: sel }); }
+    if (S.myTurn && !wasMyTurn) { try { navigator.vibrate && navigator.vibrate([120, 60, 120]); } catch (e) {} }
     wasMyTurn = S.myTurn;
     if (S.news && S.news.id !== lastNews) { if (lastNews) toast(S.news.text); lastNews = S.news.id; }
     renderGame();
@@ -282,7 +282,6 @@ $('hand').addEventListener('click', e => {
   const el = e.target.closest('.hc'); if (!el || !S) return;
   const i = +el.dataset.i;
   sel = sel === i ? null : i; pend = null;
-  if (S.myTurn) send({ t:'select', i: sel });
   renderGame();
 });
 $('board').addEventListener('click', e => {

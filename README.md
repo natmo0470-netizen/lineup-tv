@@ -8,7 +8,7 @@ A five-in-a-row card-and-chip party game. The board lives on the TV; every playe
 - The TV opens a room and shows a QR code + 4-letter room code.
 - Each player scans it, types a name, and picks a team on their phone.
 - **2 teams** (up to 4 players) or **3 teams** (up to 6 players), with 1–2 players per team. A team with nobody on it is played by the CPU.
-- On your turn your phone buzzes: tap a card, tap a glowing space, tap **Place**. The TV highlights where you're looking so the room can follow along.
+- On your turn your phone buzzes: tap a card, tap a glowing space, tap **Place**. Which card you're considering stays on your phone — the TV only shows a chip once it's placed.
 - Dropped connection? Re-scan the code (or just reopen the link) and your hand comes back.
 - No phones? Choose **Play with TV remote only** for the original pass-the-remote mode.
 
