@@ -177,18 +177,23 @@ function genCode(){ const A='ABCDEFGHJKLMNPQRSTUVWXYZ'; let s=''; for(let i=0;i<
 function startHosting(){
   roomCode = genCode();
   const base = location.href.split('#')[0].split('?')[0].replace(/[^/]*$/, '');
-  joinURL = base + 'play.html?room=' + roomCode + (Net.kind()==='bc' ? '&net=bc' : '');
+  const makeURL = b => base + 'play.html?room=' + roomCode + (b ? '&b=' + b : '') + Net.carry();
+  joinURL = makeURL(0);
   $('roomCode').textContent = roomCode; $('roomCode2').textContent = roomCode;
   $('joinUrl').textContent = joinURL.replace(/^https?:\/\//,'');
-  drawQR();
+  $('qr').innerHTML = '<div style="width:40vh;height:40vh;display:flex;align-items:center;justify-content:center;color:#64748b;font-size:2.4vh">Opening a room…</div>';
   setNet('Opening a room…');
   host = Net.host(roomCode, {
-    open(){ netReady = true; setNet('Room is open — scan the code to join.'); },
-    error(e){
-      if (e && e.type === 'unavailable-id') { host.destroy(); return startHosting(); }
-      if (e && (e.type === 'peer-unavailable')) return;   // a phone looked for a stale room; ignore
-      netReady = false;
-      setNet('Phones can’t connect right now (' + ((e && (e.type||e.message)) || 'network') + '). Refresh to retry, or play with the TV remote.');
+    open(info){
+      netReady = true;
+      joinURL = makeURL(info && info.broker);
+      $('joinUrl').textContent = joinURL.replace(/^https?:\/\//,'');
+      drawQR();
+      setNet('Room is open — scan the code to join.');
+      refresh();
+    },
+    error(){
+      setNet('Still trying to open a room… check that the TV is connected to the internet.');
     },
     connect(){},
     data: onClientMsg,

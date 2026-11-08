@@ -12,7 +12,7 @@ A five-in-a-row card-and-chip party game. The board lives on the TV; every playe
 - Dropped connection? Re-scan the code (or just reopen the link) and your hand comes back.
 - No phones? Choose **Play with TV remote only** for the original pass-the-remote mode.
 
-Phones connect straight to the TV's browser with WebRTC via [PeerJS](https://peerjs.com/) — no server to run. Everyone being on the same Wi-Fi works best.
+Phones and the TV pass messages through a free public MQTT relay over secure WebSockets (HiveMQ, with EMQX and Eclipse as fallbacks) — no server to run, and it works on any TV browser and network. Game messages go through the public relay, so don't type anything private into a player name.
 
 ## Rules
 Play a card and put a chip on a matching space (every card appears twice). Five in a row — across, down, or diagonal — is a Lineup. Corners count for everyone.

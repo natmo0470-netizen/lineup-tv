@@ -128,7 +128,7 @@ const store = { get(k){ try { return localStorage.getItem(k); } catch(e){ return
 let room = (P.get('room') || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
 let myId = P.get('pid') || store.get('lineupId'); if (!myId) { myId = 'p' + Math.random().toString(36).slice(2, 12); store.set('lineupId', myId); }
 let myName = store.get('lineupName') || '';
-let client = null, L = null, S = null, sel = null, pend = null, lastNews = 0, wasMyTurn = false, retryT = null, wakeLock = null;
+let client = null, brokerIdx = (+P.get('b') || 0), pinned = P.has('b'), gotReply = false, everOpen = false, helloT = null, helloTries = 0, L = null, S = null, sel = null, pend = null, lastNews = 0, wasMyTurn = false, retryT = null, wakeLock = null;
 
 $('nameIn').value = myName;
 $('roomIn').value = room;
@@ -144,24 +144,41 @@ $('joinBtn').onclick = () => {
   $('joinBtn').disabled = true; $('joinBtn').textContent = 'Connecting…';
   connect();
 };
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && client) { try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(w => wakeLock = w).catch(() => {}); } catch (e) {} }
-});
 
 function connect(){
   if (client) client.destroy();
-  clearTimeout(retryT);
+  clearTimeout(retryT); clearInterval(helloT);
+  gotReply = false; everOpen = false;
+  if (!$('conn').textContent) setConn('Connecting…');
+  const hello = () => client && client.send({ t:'hello', id: myId, name: myName });
   client = Net.join(room, {
-    open(){ setConn(''); client.send({ t:'hello', id: myId, name: myName }); },
-    data: onMsg,
-    close(){ if ($('conn').classList.contains('hidden')) setConn('Connection lost — reconnecting…'); retryT = setTimeout(connect, 2500); },
-    error(e){
-      if (e && e.type === 'peer-unavailable') setConn(`Room ${room} not found — is Lineup open on the TV?`);
-      else setConn('Connection problem — retrying…');
-      $('joinBtn').disabled = false; $('joinBtn').textContent = 'Join game';
+    open(){
+      everOpen = true; hello(); helloTries = 0;
+      helloT = setInterval(() => {
+        if (gotReply) return clearInterval(helloT);
+        helloTries++;
+        if (!pinned && helloTries >= 2 && Net.brokerCount > 1) {   // maybe the TV is on another relay
+          brokerIdx = (brokerIdx + 1) % Net.brokerCount; return connect();
+        }
+        if (helloTries >= 2) setConn(`Looking for room ${room}… make sure the TV is showing this room code.`);
+        hello();
+      }, 3000);
+    },
+    data(m){ if (!gotReply) { gotReply = true; clearInterval(helloT); setConn(''); } onMsg(m); },
+    close(){
+      clearInterval(helloT);
+      if (!everOpen && !pinned) brokerIdx = (brokerIdx + 1) % Net.brokerCount;
+      if (gotReply) setConn('Connection lost — reconnecting…');
+      retryT = setTimeout(connect, gotReply ? 1500 : 800);
     }
-  });
+  }, { id: myId, broker: brokerIdx });
 }
+document.addEventListener('visibilitychange', () => {
+  // phones often drop the connection while the screen is off; reconnect right away on return
+  if (document.visibilityState !== 'visible' || !client) return;
+  try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(w => wakeLock = w).catch(() => {}); } catch (e) {}
+  if ($('joinV').classList.contains('hidden')) connect();
+});
 function setConn(t){ $('conn').textContent = t; $('conn').classList.toggle('hidden', !t); }
 function send(m){ if (client) client.send(m); }
 function show(v){ ['joinV','lobbyV','gameV'].forEach(id => $(id).classList.toggle('hidden', id !== v)); }
